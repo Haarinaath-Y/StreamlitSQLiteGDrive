@@ -3,6 +3,7 @@ import streamlit as st
 import os
 import io
 from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from googleapiclient.errors import HttpError
@@ -11,11 +12,14 @@ from google.oauth2.service_account import Credentials
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 
-# Google Drive authentication
+# Authenticate using the service account
 def authenticate_gdrive():
-    creds = Credentials.from_service_account_info(st.secrets["gdrive"])
-    service = build('drive', 'v3', credentials=creds)
-    return service
+    # Load the service account credentials
+    creds = service_account.Credentials.from_service_account_file(
+        'credentials.json',
+        scopes=['https://www.googleapis.com/auth/drive']
+    )
+    return creds
 
 
 # Download SQLite database from Google Drive
@@ -112,7 +116,7 @@ def list_files(service):
 def main():
     st.title("SQLite Database with Google Drive Storage")
 
-    # Authenticate with Google Drive
+    # Build the Drive service
     creds = authenticate_gdrive()
     service = build('drive', 'v3', credentials=creds)
 
