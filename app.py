@@ -29,7 +29,7 @@ def authenticate_gdrive():
 
 
 # Download SQLite database from Google Drive
-def download_db_from_drive(service, file_id, file_name):
+def download_db_from_drive(service, file_id, file_name=None):
     request = service.files().get_media(fileId=file_id)
     fh = io.FileIO(file_name, 'wb')
     downloader = MediaIoBaseDownload(fh, request)
@@ -38,7 +38,7 @@ def download_db_from_drive(service, file_id, file_name):
         status, done = downloader.next_chunk()
 
 
-def upload_db_to_drive(service, db_name, file_id=None):
+def upload_db_to_drive(service, db_name, file_id):
     """Uploads or updates the SQLite database file to Google Drive.
 
     Args:
@@ -50,14 +50,14 @@ def upload_db_to_drive(service, db_name, file_id=None):
         The ID of the uploaded or updated file.
     """
     try:
-        # Define the metadata for the file
+        # Define the metadata for the file (with correct MIME type for SQLite)
         file_metadata = {
             'name': db_name,
-            'mimeType': 'application/octet-stream'  # Adjust if necessary
+            'mimeType': 'application/x-sqlite3'  # SQLite file MIME type
         }
 
         # Create media file upload
-        media = MediaFileUpload(db_name, mimetype='application/octet-stream')
+        media = MediaFileUpload(db_name, mimetype='application/x-sqlite3')
 
         if file_id:  # If updating an existing file
             try:
@@ -72,6 +72,10 @@ def upload_db_to_drive(service, db_name, file_id=None):
                 ).execute()
 
                 st.success(f"Database updated successfully! File ID: {file.get('id')}")
+
+                # Log the update success for debugging
+                st.write(f"File metadata after update: {file}")
+
             except HttpError as e:
                 if e.resp.status == 404:
                     st.error("File not found. Please check the file ID.")
@@ -87,6 +91,9 @@ def upload_db_to_drive(service, db_name, file_id=None):
                 fields='id'
             ).execute()
             st.success(f"Database uploaded successfully! File ID: {file.get('id')}")
+
+            # Log the create success for debugging
+            st.write(f"File metadata after creation: {file}")
 
         return file.get('id')  # Return the file ID
 
@@ -120,7 +127,7 @@ def main():
     service = build('drive', 'v3', credentials=creds)
 
     # File ID of the SQLite database in Google Drive
-    file_id = '1xb4FYL8r5i7uHWQhX6odQ_IpyEM5CWuw'
+    file_id = '12M9HJqSSmS-Dc4jO9ejvKSOf3Ir91X5-'
     db_name = 'tracking_expenses_app.db'
 
     # Download the SQLite file from Google Drive
